@@ -15,6 +15,16 @@ class ViewController: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDe
     var audioPlayer: AVAudioPlayer?
     var audioRecorder: AVAudioRecorder?
     
+    var sound: URL?
+    
+    @IBOutlet var imageView: UIView!
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        let yConstraint = NSLayoutConstraint(item: imageView, attribute: .top, relatedBy: .equal, toItem: view, attribute: .top, multiplier: 1, constant: view.bounds.height / 4)
+        NSLayoutConstraint.activate([yConstraint])
+    }
+    
     //MARK: Outlets
     @IBOutlet weak var player: UIButton!
     @IBOutlet weak var stop: UIButton!
@@ -31,7 +41,7 @@ class ViewController: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDe
         let dirPaths = fileMgr.urls(for: .documentDirectory,
                                     in: .userDomainMask)
         
-        let soundFileURL = dirPaths[0].appendingPathComponent("sound.caf")
+        self.sound = dirPaths[0].appendingPathComponent("sound.caf")
         
         let recordSettings =
             [AVEncoderAudioQualityKey: AVAudioQuality.min.rawValue,
@@ -49,18 +59,30 @@ class ViewController: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDe
         }
         
         do {
-            try audioRecorder = AVAudioRecorder(url: soundFileURL,
+            try audioRecorder = AVAudioRecorder(url: sound!,
                                                 settings: recordSettings as [String : AnyObject])
             audioRecorder?.prepareToRecord()
         } catch let error as NSError {
             print("audioSession error: \(error.localizedDescription)")
         }
+        //this is for the prepareForSegue
+        performSegue(withIdentifier: "stopsRecording", sender: self)
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
+    
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        if segue.identifier == "stopsRecording"{
+            let vc = segue.destination as! SecondViewController
+            //Data has to be a variable name in your RandomViewController
+            vc.sound = sound
+        }
+    }
+    
  
     //MARK: Actions
     
@@ -81,18 +103,6 @@ class ViewController: UIViewController, AVAudioRecorderDelegate, AVAudioPlayerDe
             audioPlayer?.stop()
         }
 
-        if audioRecorder?.isRecording == false {
-            stop?.isEnabled = true
-            do {
-                try audioPlayer = AVAudioPlayer(contentsOf:
-                    (audioRecorder?.url)!)
-                audioPlayer!.delegate = self
-                audioPlayer!.prepareToPlay()
-                audioPlayer!.play()
-            } catch let error as NSError {
-                print("audioPlayer error: \(error.localizedDescription)")
-            }
-        }
     }
     
     
